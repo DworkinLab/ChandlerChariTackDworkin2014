@@ -1,0 +1,72 @@
+Read in flybase (list of genes with fbgn/names/symbols, and chromosomal locations)#
+###############################################################################
+#
+flybase.cols <- c("fbgn", "symbol", "chrom", "start", "stop")#
+flybase.colClasses <- c("character", "character", "character", "numeric", "numeric")#
+flybase.data <- read.csv("../../expression_scripts/flybase/flybase_map_table.csv", header=FALSE, colClasses=flybase.colClasses)#
+#flybase.data <- read.csv("flybase_map_table.csv", header=FALSE, colClasses=flybase.colClasses)#
+colnames(flybase.data) <- flybase.cols#
+newstart <- ifelse(flybase.data$start < flybase.data$stop, flybase.data$start, flybase.data$stop)#
+newstop <- ifelse(flybase.data$stop > flybase.data$start, flybase.data$stop, flybase.data$start)#
+flybase.data$start <- as.numeric(newstart)#
+flybase.data$stop <- as.numeric(newstop)#
+rm(newstart)#
+rm(newstop)#
+#Want the flybase data to be sorted by chromosome and then starting coordinates#
+flybase.data <- flybase.data[order(flybase.data$start),]#
+flybase.data <- flybase.data[order(flybase.data$chrom),]#
+flybase.data$y <- rep(seq(from=0.1, to=0.9, by=0.1), length.out=nrow(flybase.data)) #These values will be used for plotting
+Read in the DGRC, Illumina, DGE datasets#
+# Here we're interested in background-dependence, so we want to use the p-values associated with the interactions#
+###############################################################################
+#
+dgrc.results <- read.csv('../../expression_scripts/microarray_data/DGRC_summary_results.csv', header=TRUE)#
+#dgrc.results <- read.csv('DGRC_summary_results.csv', header=TRUE)#
+dgrc.results <- dgrc.results[,2:ncol(dgrc.results)]#
+dgrc.results <- dgrc.results[grep("FBgn", dgrc.results$fbgn),]#
+dgrc.results$fbgn <- as.character(dgrc.results$fbgn)#
+#
+illumina.results <- read.csv('../../expression_scripts/microarray_data/illumina_summary_results.csv', header=TRUE)#
+#illumina.results <- read.csv('illumina_summary_results.csv', header=TRUE)#
+colnames(illumina.results)[1] <- "gene"#
+illumina.results <- illumina.results[grep("FBgn", illumina.results$fbgn),]#
+illumina.results$fbgn <- as.character(illumina.results$fbgn)#
+#
+dge.results <- read.csv('../../expression_scripts/dge_r_analysis/dge_allele_specific_results.csv', header=TRUE)#
+#dge.results <- read.csv('dge_allele_specific_results.csv', header=TRUE)#
+dge.results$fbgn <- as.character(dge.results$fbgn)#
+dge.results$gene <- as.character(dge.results$gene)#
+dge.results <- dge.results[is.finite(dge.results$p.2),] #Remove those that we couldn't test for an interaction#
+#
+dge.genotype.results <- read.csv('../../expression_scripts/dge_r_analysis/dge_genotype_results.csv')#
+#dge.genotype.results <- read.csv('dge_genotype_results.csv')
+Read in SRC modifier screen results#
+###############################################################################
+#
+src.cols <- c("stock", "p.deletion", "p.background", "p.interaction", "chrom", "start", "stop", "q.deletion", "q.interaction")#
+src.colclasses <- c("character", "numeric", "numeric", "numeric", "character", "numeric", "numeric", "numeric", "numeric")#
+src.results <- read.csv("../../src_scripts/raw_deletion_results.csv", header=TRUE, colClasses=src.colclasses)#
+#src.results <- read.csv("raw_deletion_results.csv", header=TRUE, colClasses=src.colclasses)#
+colnames(src.results) <- src.cols#
+#Sort and add y-values for plotting#
+src.results <- src.results[order(src.results$start),]#
+src.results <- src.results[order(src.results$chrom),]#
+src.results$y <- rep(seq(from=0.1, to=0.9, by=0.1), length.out=nrow(src.results))
+Read in binding site data#
+#################################################################################
+#
+binding.cols <- c("fbgn", "llr.sam", "llr.ore", "llr.diff", "gc", "size", "empirical.p", "empirical.p.sam", "empirical.p.ore", "empirical.q.sam", "empirical.q.ore", "empirical.q")#
+binding.colclasses <- c("character", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")#
+binding.results <- read.csv("../../sequencing_scripts/binding_sites_custom_meme/SAM_ORE_binding_results_bygene_custom_meme.csv", header=TRUE, colClasses=binding.colclasses)#
+#binding.results <- read.csv("SAM_ORE_binding_results_bygene_custom_meme.csv", header=TRUE, colClasses=binding.colclasses)#
+colnames(binding.results) <- binding.cols#
+binding.results$min.q <- ifelse(binding.results$empirical.q.ore < binding.results$empirical.q.sam, binding.results$empirical.q.ore, binding.results$empirical.q.sam)
+Read in backcross mapping data#
+################################################################################
+#
+#Across all short backcross replicates#
+#
+bc.results <- read.csv("freq_data_10kbwindows_2kbsteps.csv")
+column.names <- c("chrom", "pos", "sam.S", "sam.O", "ore.S", "ore.O", "bc.long.S", "bc.long.O", "bc.short1.S", "bc.short1.O", "bc.short2.S", "bc.short2.O", "bc.short3.S", "bc.short3.O", "bc.short4.S", "bc.short4.O", "bs.long.1.S", "bs.long.1.O", "bs.long.2.S", "bs.long.2.O", "bs.short.1.S", "bs.short.1.O", "bs.short.2.S", "bs.short.2.O")#
+column.types <- c("character", rep("numeric", 23))#
+snp.data <- read.csv("../../sequencing_scripts/snp_data/all_allele_freq_plot_data.csv", header=FALSE, col.names=column.names, colClasses=column.types)
